@@ -46,7 +46,7 @@ class Footage_Handler:
         all_linelevel_splits = []
 
         for line in linelevel_subtitles:
-            out_clips, positions = self.create_caption(line, frame_size, x_pos=0, y_pos=0)
+            out_clips, positions = self.create_caption(line, frame_size, x_pos=0, y_pos=input_video.h)
 
             max_width = 0
             max_height = 0
@@ -59,7 +59,7 @@ class Footage_Handler:
 
             color_clip = ColorClip(size=(int(max_width * 1.1), int(max_height * 1.1)),
                                    color=(64, 64, 64))
-            color_clip = color_clip.set_opacity(.6)
+            color_clip = color_clip.set_opacity(0)
             color_clip = color_clip.set_start(line['start']).set_duration(line['end'] - line['start'])
 
             # centered_clips = [each.set_position('center') for each in out_clips]
@@ -98,7 +98,7 @@ class Footage_Handler:
 
         max_line_width = frame_width - 2 * x_buffer
 
-        fontsize = int(frame_height * 0.06)
+        fontsize = int(frame_height * 0.075)
 
         space_width = ""
         space_height = ""
@@ -111,14 +111,14 @@ class Footage_Handler:
                                  color=color,
                                  stroke_color=stroke_color,
                                  stroke_width=stroke_width,
-                                 bg_color='',
+                                 bg_color='transparent',
                                  transparent=True).set_start(textJSON['start']).set_duration(full_duration)
 
             word_clip_space = TextClip(" ",
                                        font=font,
                                        fontsize=fontsize,
                                        color=color,
-                                       bg_color='',
+                                       bg_color='transparent',
                                        transparent=True).set_start(textJSON['start']).set_duration(full_duration)
 
             word_width, word_height = word_clip.size
@@ -167,9 +167,14 @@ class Footage_Handler:
             word_clips.append(word_clip_space)
 
         for highlight_word in xy_textclips_positions:
-            word_clip_highlight = TextClip(highlight_word['word'], font=font, fontsize=fontsize, color=highlight_color,
-                                           stroke_color=stroke_color, stroke_width=stroke_width).set_start(
-                highlight_word['start']).set_duration(highlight_word['duration'])
+            word_clip_highlight = TextClip(highlight_word['word'],
+                                           font=font,
+                                           fontsize=fontsize,
+                                           color=highlight_color,
+                                           stroke_color=stroke_color,
+                                           stroke_width=stroke_width).set_start(highlight_word['start']).\
+                                           set_duration(highlight_word['duration'])
+
             word_clip_highlight = word_clip_highlight.set_position((highlight_word['x_pos'], highlight_word['y_pos']))
             word_clips.append(word_clip_highlight)
 

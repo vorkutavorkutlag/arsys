@@ -10,14 +10,14 @@ async def main():
     sub, title, body = RH.get_random_post()
     RH.wipe_mem()
     text = ". ".join((title, body))
-    stripped_title = re.sub('[!@#$,."?]', '', title)
+    stripped_title = re.sub('[!@#$,."?/]', '', title)
     TTSH: text_to_speech.TextSpeech = text_to_speech.TextSpeech()
     await TTSH.tts(text, stripped_title)
 
     FH: footage_handler.Footage_Handler = footage_handler.Footage_Handler()
-    FH.select_rand_footage(title, f"{stripped_title}.wav")
+    FH.select_rand_footage(stripped_title, f"{stripped_title}.wav")
 
-    # CODE HERE
+    FH.generate_subtitles_video(f"{stripped_title}.wav", f"output\\building_{stripped_title}.mp4")
 
     os.remove(f"{stripped_title}.wav")
 

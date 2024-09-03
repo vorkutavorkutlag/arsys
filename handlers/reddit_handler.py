@@ -70,7 +70,7 @@ class RedditHandler:
             posts = subreddit.hot(limit=num_posts)
 
             for post in posts:
-                if post.stickied:
+                if post.stickied or post.title == "[ Removed by Reddit ]":
                     continue
 
                 post_hash = hashlib.sha1(post.selftext.encode()).hexdigest()

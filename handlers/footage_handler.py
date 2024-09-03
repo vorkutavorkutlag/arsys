@@ -3,7 +3,7 @@ import os
 import cv2
 import numpy as np
 from librosa import get_duration
-from moviepy.editor import VideoFileClip, AudioFileClip
+from moviepy.editor import VideoFileClip, AudioFileClip, CompositeAudioClip, concatenate_audioclips
 from moviepy.config import change_settings
 from faster_whisper import WhisperModel
 from math import ceil
@@ -14,7 +14,7 @@ change_settings({"IMAGEMAGICK_BINARY": r"C:\\Program Files\\ImageMagick-7.1.1-Q1
 
 class Footage_Handler:
     @staticmethod
-    def select_rand_footage(title: str, tts_path: str):
+    def select_rand_footage(tts_path: str):
         not_videos = ['__pycache__', 'desktop.ini']
         background_footage = f"footage\\" \
                              f"{random.choice([file for file in os.listdir('footage') if file not in not_videos])}"
@@ -132,27 +132,47 @@ class Footage_Handler:
             all_texccontents.extend(segment['textcontents'])
 
         out_video = input_video.fl(lambda gf, t: pipeline(gf(t), t))
-        out_video.write_videofile("PLEASEWORK.mp4")
         return out_video
 
     @staticmethod
     def split_footage(full_video: VideoFileClip, title):
-        current_duration = full_video.duration
-        divide_into_count = ceil(current_duration / 60)
-        single_duration = current_duration / divide_into_count
+        partDura = 59  # duration of a part in seconds
+        fullDura = full_video.duration
+        startPos = 0
 
-        if single_duration > current_duration:
-            full_video.write_videofile(f"output\\{title}.mp4")
-            return
+        i = 1
+        while True:
+            endPos = startPos + partDura
 
-        i = 0
-        while current_duration > single_duration:
-            i += 1
-            print(f"writing part {i}")
-            clip = full_video.subclip(current_duration - single_duration, current_duration)
-            current_duration -= single_duration
-            print(f"output\\{title} Part {i}")
-            clip.to_videofile(f"output\\{title} Part {divide_into_count - i}.mp4",
-                              codec="libx264",
-                              remove_temp=True,
+            if endPos > fullDura:
+                endPos = fullDura
+
+            clip = full_video.subclip(startPos, endPos)
+            part_name = f"output\\{title} Part {i}.mp4"
+            clip.to_videofile(part_name, codec="libx264", temp_audiofile='temp-audio.m4a', remove_temp=True,
                               audio_codec='aac')
+            print("part ", i, "done")
+            i += 1
+
+            startPos = endPos  # jump to next clip
+            if startPos >= fullDura:
+                break
+
+    @staticmethod
+    def select_rand_bgm(video: VideoFileClip):
+        def loop_audio_clip(audio_clip, duration):
+            loops = int(duration // audio_clip.duration) + 1
+            audio_clips = [audio_clip] * loops
+            return concatenate_audioclips(audio_clips).subclip(0, duration)
+
+        not_bgms = ['__pycache__', 'desktop.ini']
+        background_music = f"background_music\\" \
+                           f"{random.choice([file for file in os.listdir('background_music') if file not in not_bgms])}"
+        background_music = AudioFileClip(background_music)
+        background_music = loop_audio_clip(background_music, duration=video.duration)
+        background_music = background_music.set_duration(video.duration)
+        background_music = background_music.volumex(0.4)
+        combined_audio = CompositeAudioClip([video.audio, background_music])
+        final_video = video.set_audio(combined_audio)
+        background_music.close()
+        return final_video

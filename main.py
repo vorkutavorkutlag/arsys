@@ -1,6 +1,7 @@
 import asyncio
 import os
 import re
+from time import sleep
 from handlers import footage_handler, reddit_handler, text_to_speech
 
 
@@ -12,14 +13,14 @@ async def main():
     text = ". ".join((title, body))
     stripped_title = re.sub('[!@#$,."?/]', '', title)
     TTSH: text_to_speech.TextSpeech = text_to_speech.TextSpeech()
-    await TTSH.tts(text, stripped_title)
+    await TTSH.tts(text, f"output\\temp_{stripped_title}")
 
     FH: footage_handler.Footage_Handler = footage_handler.Footage_Handler()
-    FH.select_rand_footage(stripped_title, f"{stripped_title}.wav")
-
-    FH.generate_subtitles_video(f"{stripped_title}.wav", f"output\\building_{stripped_title}.mp4")
-
-    os.remove(f"{stripped_title}.wav")
+    tts_footage, tts_audio = FH.select_rand_footage(stripped_title, f"temp_{stripped_title}.wav")
+    subtitle_footage = FH.generate_subtitles_video(f"temp_{stripped_title}.wav", tts_footage)
+    FH.split_footage(subtitle_footage, stripped_title)
+    tts_audio.close()
+    os.remove(f"output\\temp_{stripped_title}.wav")
 
 
 

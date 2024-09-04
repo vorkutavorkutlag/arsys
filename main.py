@@ -22,6 +22,7 @@ async def main():
         FH.split_footage(subtitle_footage, stripped_title)
         tts_audio.close()
         os.remove(f"output\\temp_{stripped_title}.wav")
+        print(sub)
         return
 
 

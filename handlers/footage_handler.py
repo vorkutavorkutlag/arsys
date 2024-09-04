@@ -100,27 +100,34 @@ class Footage_Handler:
             try:
                 frame = np.array(frame)
                 textcontnet = next((textcontnet for textcontnet in all_texccontents
-                                        if textcontnet['start'] <= t <= textcontnet['end']), None)
+                                    if textcontnet['start'] <= t <= textcontnet['end']), None)
 
                 if textcontnet:
-                    font_scale = 2.4 * (1.5*t + 0.9 - 1.5*textcontnet['end'])
-                    pos_x = int(input_video.w/2 - (9.375*font_scale*(len(textcontnet['word']))))
-                    pos_y = 400
+                    font_scale = abs(2.82 * (1.5 * t + 0.9 - 1.5 * textcontnet['end']))
+                    font = cv2.FONT_HERSHEY_SIMPLEX
+                    text_size = cv2.getTextSize(textcontnet['word'], font, font_scale, thickness=6)[0]
+
+                    pos_x = int((input_video.w - text_size[0]) / 2)
+                    pos_y = int(input_video.h/2)
+
+                    # Outline
                     cv2.putText(frame,
                                 textcontnet['word'],
-                                (pos_x, pos_y),  # Position of the text
-                                cv2.CALIB_CB_PLAIN,
-                                font_scale,  # Font scale
-                                (150, 0, 0),  # Text color (white)
-                                18,  # Text thickness
+                                (pos_x, pos_y),
+                                font,
+                                font_scale,
+                                (150, 0, 0),
+                                18,
                                 cv2.LINE_AA)
+
+                    # Main text
                     cv2.putText(frame,
                                 textcontnet['word'],
-                                (pos_x, pos_y),  # Position of the text
-                                cv2.CALIB_CB_PLAIN,
-                                font_scale,  # Font scale
-                                (255, 255, 255),  # Text color (white)
-                                6,  # Text thickness
+                                (pos_x, pos_y),
+                                font,
+                                font_scale,
+                                (255, 255, 255),
+                                6,
                                 cv2.LINE_AA)
             except (StopIteration, StopIteration):
                 pass  # No subtitle for this time
@@ -186,7 +193,7 @@ class Footage_Handler:
         background_music = AudioFileClip(background_music)
         background_music = loop_audio_clip(background_music, duration=video.duration)
         background_music = background_music.set_duration(video.duration)
-        background_music = background_music.volumex(0.4)
+        background_music = background_music.volumex(0.35)
         combined_audio = CompositeAudioClip([video.audio, background_music])
         final_video = video.set_audio(combined_audio)
         background_music.close()

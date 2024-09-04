@@ -48,9 +48,9 @@ class RedditHandler:
         for pair in self.arsys_cursor.fetchall():
             pprint(pair)
 
-    def add_subreddit(self, sub: str, scary: bool = False):
-        sql = "INSERT INTO subreddits (name, scary) VALUES (%s, %s)"
-        self.arsys_cursor.execute(sql, (sub, scary))
+    def add_subreddit(self, sub: str, scary: bool = False, check_comments: bool = False):
+        sql = "INSERT INTO subreddits (name, scary, check_comments) VALUES (%s, %s, %s)"
+        self.arsys_cursor.execute(sql, (sub, scary, check_comments))
         self.arsys_db.commit()
 
 
@@ -94,5 +94,4 @@ class RedditHandler:
 
 if __name__ == "__main__":
     RH = RedditHandler()
-    RH.arsys_cursor.execute("DESCRIBE old_posts")
-    pprint(RH.arsys_cursor.fetchall())
+    RH.show_subreddits()

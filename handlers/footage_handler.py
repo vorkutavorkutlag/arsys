@@ -3,10 +3,11 @@ import os
 import cv2
 import numpy as np
 from librosa import get_duration
-from moviepy.editor import VideoFileClip, AudioFileClip, CompositeAudioClip, concatenate_audioclips
+from moviepy.editor import VideoFileClip, AudioFileClip, CompositeAudioClip, \
+    concatenate_audioclips, concatenate_videoclips
 from moviepy.config import change_settings
 from faster_whisper import WhisperModel
-from math import ceil
+
 
 os.environ["KMP_DUPLICATE_LIB_OK"] = "TRUE"
 change_settings({"IMAGEMAGICK_BINARY": r"C:\\Program Files\\ImageMagick-7.1.1-Q16-HDRI\\magick.exe"})
@@ -15,6 +16,13 @@ change_settings({"IMAGEMAGICK_BINARY": r"C:\\Program Files\\ImageMagick-7.1.1-Q1
 class Footage_Handler:
     @staticmethod
     def select_rand_footage(tts_path: str):
+        def loop_video_to_duration(clip: VideoFileClip, target_duration: int):
+            clip_duration = clip.duration
+            n_loops = int(target_duration // clip_duration) + 1
+
+            looped_clip = concatenate_videoclips([clip] * n_loops)
+            return looped_clip.subclip(0, target_duration)
+
         not_videos = ['__pycache__', 'desktop.ini']
         background_footage = f"footage\\" \
                              f"{random.choice([file for file in os.listdir('footage') if file not in not_videos])}"
@@ -23,8 +31,11 @@ class Footage_Handler:
         speech_duration = get_duration(filename=f"output\\{tts_path}")
         audio_clip = AudioFileClip(filename=f"output\\{tts_path}")
 
-        new_start = random.randrange(0, round(background_footage.duration - speech_duration))
-        video_clip = background_footage.subclip(new_start, new_start + speech_duration)
+        if audio_clip.duration < background_footage.duration:
+            new_start = random.randrange(0, round(background_footage.duration - speech_duration))
+            video_clip = background_footage.subclip(new_start, new_start + speech_duration)
+        else:
+            video_clip = loop_video_to_duration(background_footage, audio_clip.duration)
         video_clip.audio = audio_clip
         return video_clip, audio_clip
 
@@ -159,15 +170,19 @@ class Footage_Handler:
                 break
 
     @staticmethod
-    def select_rand_bgm(video: VideoFileClip):
+    def select_rand_bgm(video: VideoFileClip, scary: bool):
         def loop_audio_clip(audio_clip, duration):
             loops = int(duration // audio_clip.duration) + 1
             audio_clips = [audio_clip] * loops
             return concatenate_audioclips(audio_clips).subclip(0, duration)
 
         not_bgms = ['__pycache__', 'desktop.ini']
-        background_music = f"background_music\\" \
-                           f"{random.choice([file for file in os.listdir('background_music') if file not in not_bgms])}"
+        if scary:
+            background_music = f"scary_bgm\\" \
+                        f"{random.choice([file for file in os.listdir('scary_bgm') if file not in not_bgms])}"
+        else:
+            background_music = f"background_music\\" \
+                        f"{random.choice([file for file in os.listdir('background_music') if file not in not_bgms])}"
         background_music = AudioFileClip(background_music)
         background_music = loop_audio_clip(background_music, duration=video.duration)
         background_music = background_music.set_duration(video.duration)

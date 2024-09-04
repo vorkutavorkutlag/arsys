@@ -8,7 +8,7 @@ async def main():
     while True:
         RH: reddit_handler.RedditHandler = reddit_handler.RedditHandler()
         RH.init_mem()
-        sub, title, body = RH.get_random_post()
+        sub, title, body, scary = RH.get_random_post()
         RH.wipe_mem()
         text = ". ".join((title, body))
         stripped_title = re.sub('[!@#$,."?/]', '', title)
@@ -17,11 +17,7 @@ async def main():
 
         FH: footage_handler.Footage_Handler = footage_handler.Footage_Handler()
         tts_footage, tts_audio = FH.select_rand_footage(f"temp_{stripped_title}.wav")
-        if tts_audio.duration > 1200:
-            tts_audio.close()
-            os.remove(f"output\\temp_{stripped_title}.wav")
-            continue
-        bgm_footage = FH.select_rand_bgm(tts_footage)
+        bgm_footage = FH.select_rand_bgm(tts_footage, scary)
         subtitle_footage = FH.generate_subtitles_video(f"temp_{stripped_title}.wav", bgm_footage)
         FH.split_footage(subtitle_footage, stripped_title)
         tts_audio.close()

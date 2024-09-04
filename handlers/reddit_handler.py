@@ -25,7 +25,7 @@ class RedditHandler:
         )
 
         self.arsys_cursor = self.arsys_db.cursor()
-        self.arsys_cursor.execute("SELECT * FROM subreddits")
+        self.arsys_cursor.execute("SELECT name FROM subreddits")
         self.subreddits: list = self.arsys_cursor.fetchall()
 
     def init_mem(self):
@@ -48,9 +48,9 @@ class RedditHandler:
         for pair in self.arsys_cursor.fetchall():
             pprint(pair)
 
-    def add_subreddit(self, sub: str):
-        sql = "INSERT INTO subreddits (name) VALUES (%s)"
-        self.arsys_cursor.execute(sql, (sub,))
+    def add_subreddit(self, sub: str, scary: bool = False):
+        sql = "INSERT INTO subreddits (name, scary) VALUES (%s, %s)"
+        self.arsys_cursor.execute(sql, (sub, scary))
         self.arsys_db.commit()
 
 
@@ -63,6 +63,8 @@ class RedditHandler:
     def get_random_post(self) -> tuple:
         subname = choice(self.subreddits)
         subreddit = self.reddit.subreddit(subname[0])
+        self.arsys_cursor.execute(f"SELECT scary FROM subreddits WHERE name = '{subname[0]}'")
+        scary = bool(list(self.arsys_cursor.fetchall())[0])
 
         found_post = False
         num_posts = 1
@@ -84,7 +86,13 @@ class RedditHandler:
                 var = (post_hash, subname[0])
                 self.arsys_cursor.execute(sql, var)
                 self.arsys_db.commit()
-                return subname, post.title, post.selftext
+                return subname, post.title, post.selftext, scary
 
 
             num_posts += 1
+
+
+if __name__ == "__main__":
+    RH = RedditHandler()
+    RH.arsys_cursor.execute("DESCRIBE old_posts")
+    pprint(RH.arsys_cursor.fetchall())

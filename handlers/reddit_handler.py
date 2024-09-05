@@ -1,4 +1,4 @@
-import praw
+import asyncpraw
 import mysql.connector
 import hashlib
 from os import getenv
@@ -11,7 +11,7 @@ from pprint import pprint
 class RedditHandler:
     def __init__(self):
         load_dotenv()
-        self.reddit = praw.Reddit(
+        self.reddit = asyncpraw.Reddit(
             client_id=getenv("REDDIT_CLIENT_ID"),
             client_secret=getenv("REDDIT_SECRET"),
             user_agent=getenv("REDDIT_USER_AGENT"),
@@ -60,9 +60,9 @@ class RedditHandler:
         self.arsys_db.commit()
 
 
-    def get_random_post(self) -> tuple:
+    async def get_random_post(self) -> tuple:
         subname = choice(self.subreddits)
-        subreddit = self.reddit.subreddit(subname[0])
+        subreddit = await self.reddit.subreddit(subname[0])
         self.arsys_cursor.execute(f"SELECT scary FROM subreddits WHERE name = '{subname[0]}'")
         scary = bool(list(self.arsys_cursor.fetchall())[0])
 
@@ -71,12 +71,11 @@ class RedditHandler:
         while not found_post:
             posts = subreddit.hot(limit=num_posts)
 
-            for post in posts:
+            async for post in posts:
                 if post.stickied or post.title == "[ Removed by Reddit ]":
                     continue
 
                 post_hash = hashlib.sha1(post.selftext.encode()).hexdigest()
-
                 self.arsys_cursor.execute(f"SELECT hash FROM old_posts WHERE sub = '{subname[0]}'")
                 used_hashes = self.arsys_cursor.fetchall()
                 if (post_hash,) in used_hashes:

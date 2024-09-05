@@ -28,8 +28,8 @@ class Footage_Handler:
                              f"{random.choice([file for file in os.listdir('footage') if file not in not_videos])}"
         background_footage = VideoFileClip(background_footage)
 
-        speech_duration = get_duration(filename=f"output\\{tts_path}")
-        audio_clip = AudioFileClip(filename=f"output\\{tts_path}")
+        speech_duration = get_duration(filename=os.path.join("output", tts_path))
+        audio_clip = AudioFileClip(filename=os.path.join("output", tts_path))
 
         if audio_clip.duration < background_footage.duration:
             new_start = random.randrange(0, round(background_footage.duration - speech_duration))
@@ -41,7 +41,6 @@ class Footage_Handler:
 
     @staticmethod
     def generate_subtitles_video(tts_path: str, input_video: VideoFileClip, cuda=True):
-
         def split_text_into_lines(data):
 
             MaxChars = 8
@@ -55,20 +54,15 @@ class Footage_Handler:
             for idx, word_data in enumerate(data):
                 start = word_data["start"]
                 end = word_data["end"]
-
                 line.append(word_data)
                 line_duration += end - start
-
                 temp = " ".join(item["word"] for item in line)
-
-                # Check if adding a new word exceeds the maximum character count or duration
                 new_line_chars = len(temp)
-
                 duration_exceeded = line_duration > MaxDuration
                 chars_exceeded = new_line_chars > MaxChars
+
                 if idx > 0:
                     gap = word_data['start'] - data[idx - 1]['end']
-                    # print (word,start,end,gap)
                     maxgap_exceeded = gap > MaxGap
                 else:
                     maxgap_exceeded = False
@@ -93,7 +87,6 @@ class Footage_Handler:
                     "textcontents": line
                 }
                 subtitles.append(subtitle_line)
-
             return subtitles
 
         def pipeline(frame, t):
@@ -103,16 +96,16 @@ class Footage_Handler:
                                     if textcontnet['start'] <= t <= textcontnet['end']), None)
 
                 if textcontnet:
-                    font_scale = abs(2.82 * (1.5 * t + 0.9 - 1.5 * textcontnet['end']))
-                    font = cv2.FONT_HERSHEY_SIMPLEX
-                    text_size = cv2.getTextSize(textcontnet['word'], font, font_scale, thickness=6)[0]
+                    font_scale = abs(2.8 * (1.5 * t + 0.9 - 1.5 * textcontnet['end']))
+                    font = cv2.FONT_HERSHEY_TRIPLEX
+                    text_size = cv2.getTextSize(textcontnet['word'].upper(), font, font_scale, thickness=6)[0]
 
                     pos_x = int((input_video.w - text_size[0]) / 2)
                     pos_y = int(input_video.h/2)
 
                     # Outline
                     cv2.putText(frame,
-                                textcontnet['word'],
+                                textcontnet['word'].upper(),
                                 (pos_x, pos_y),
                                 font,
                                 font_scale,
@@ -122,7 +115,7 @@ class Footage_Handler:
 
                     # Main text
                     cv2.putText(frame,
-                                textcontnet['word'],
+                                textcontnet['word'].upper(),
                                 (pos_x, pos_y),
                                 font,
                                 font_scale,
@@ -138,7 +131,7 @@ class Footage_Handler:
         model = WhisperModel(model_size, device="cuda") if cuda else WhisperModel(model_size)
 
         wordlevel_info = []
-        segments, info = model.transcribe(f"output\\{tts_path}", word_timestamps=True)
+        segments, info = model.transcribe(os.path.join("output", tts_path), word_timestamps=True)
         segments = list(segments)  # The transcription will actually run here.
         for segment in segments:
             for word in segment.words:
@@ -158,6 +151,11 @@ class Footage_Handler:
         fullDura = full_video.duration
         startPos = 0
 
+        if full_video.duration < partDura:
+            full_video.write_videofile(os.path.join("output", f"{title}.mp4"), codec="libx264",
+                                       temp_audiofile='temp-audio.m4a', remove_temp=True, audio_codec='aac')
+            return
+
         i = 1
         while True:
             endPos = startPos + partDura
@@ -166,12 +164,10 @@ class Footage_Handler:
                 endPos = fullDura
 
             clip = full_video.subclip(startPos, endPos)
-            part_name = f"output\\{title} Part {i}.mp4"
+            part_name = os.path.join("output", f"{title} Part {i}.mp4")
             clip.to_videofile(part_name, codec="libx264", temp_audiofile='temp-audio.m4a', remove_temp=True,
                               audio_codec='aac')
-            print("part ", i, "done")
             i += 1
-
             startPos = endPos  # jump to next clip
             if startPos >= fullDura:
                 break
@@ -183,13 +179,14 @@ class Footage_Handler:
             audio_clips = [audio_clip] * loops
             return concatenate_audioclips(audio_clips).subclip(0, duration)
 
-        not_bgms = ['__pycache__', 'desktop.ini']
+        not_bgms = ('__pycache__', 'desktop.ini')
         if scary:
-            background_music = f"scary_bgm\\" \
-                        f"{random.choice([file for file in os.listdir('scary_bgm') if file not in not_bgms])}"
+            background_music = os.path.join("scary_bgm",
+                        f"{random.choice([file for file in os.listdir('scary_bgm') if file not in not_bgms])}")
         else:
-            background_music = f"background_music\\" \
-                        f"{random.choice([file for file in os.listdir('background_music') if file not in not_bgms])}"
+            background_music = os.path.join("background_music",
+                        f"{random.choice([file for file in os.listdir('background_music') if file not in not_bgms])}")
+
         background_music = AudioFileClip(background_music)
         background_music = loop_audio_clip(background_music, duration=video.duration)
         background_music = background_music.set_duration(video.duration)

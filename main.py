@@ -8,7 +8,8 @@ async def main():
     while True:
         RH: reddit_handler.RedditHandler = reddit_handler.RedditHandler()
         RH.init_mem()
-        sub, title, body, scary = RH.get_random_post()
+        sub, title, body, scary = await RH.get_random_post()
+        title = title.upper()
         RH.wipe_mem()
         text = ". ".join((title, body))
         stripped_title = re.sub('[!@#$,."?/]', '', title)
@@ -22,10 +23,10 @@ async def main():
         FH.split_footage(subtitle_footage, stripped_title)
         tts_audio.close()
         os.remove(f"output\\temp_{stripped_title}.wav")
-        print(sub)
+
+
+
         return
-
-
 
 
 

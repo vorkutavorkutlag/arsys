@@ -29,7 +29,7 @@ async def main():
         # endregion
 
         while num_uploaded < 3:
-            sub, title, body, scary = await RH.get_random_post(forget=True)
+            sub, title, body, scary = await RH.get_random_post()
 
             title = title.upper()
             text = ". ".join((title, body))

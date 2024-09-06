@@ -60,7 +60,7 @@ class RedditHandler:
         self.arsys_db.commit()
 
 
-    async def get_random_post(self) -> tuple:
+    async def get_random_post(self, forget: bool = False) -> tuple:
         subname = choice(self.subreddits)
         subreddit = await self.reddit.subreddit(subname[0])
         self.arsys_cursor.execute(f"SELECT scary FROM subreddits WHERE name = '{subname[0]}'")
@@ -81,10 +81,12 @@ class RedditHandler:
                 if (post_hash,) in used_hashes:
                     continue
 
-                sql = "INSERT INTO old_posts (hash, sub) VALUES (%s, %s)"
-                var = (post_hash, subname[0])
-                self.arsys_cursor.execute(sql, var)
-                self.arsys_db.commit()
+                if not forget:
+                    sql = "INSERT INTO old_posts (hash, sub) VALUES (%s, %s)"
+                    var = (post_hash, subname[0])
+                    self.arsys_cursor.execute(sql, var)
+                    self.arsys_db.commit()
+
                 return subname, post.title, post.selftext, scary
 
 

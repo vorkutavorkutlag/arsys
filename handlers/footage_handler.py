@@ -173,7 +173,7 @@ class Footage_Handler:
                             'temp-audio.m4a'), remove_temp=True, audio_codec='aac')
             i += 1
             startPos = endPos  # jump to next clip
-            if startPos >= fullDura:
+            if startPos >= fullDura or i == 4:
                 break
 
 

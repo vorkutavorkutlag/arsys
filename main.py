@@ -17,6 +17,7 @@ async def main():
 
         try:
             creds_values = list(creds[f'youtube_api_{account_num}'].values())
+            print(creds_values)
         except KeyError:    # == No more accounts
             return
 
@@ -29,7 +30,7 @@ async def main():
         # endregion
 
         while num_uploaded < 3:
-            sub, title, body, scary = await RH.get_random_post()
+            sub, title, body, scary = await RH.get_random_post(forget=True)
 
             title = title.upper()
             text = ". ".join((title, body))

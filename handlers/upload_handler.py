@@ -1,7 +1,6 @@
 import os
 
 import aiohttp
-from dotenv import load_dotenv
 from googleapiclient.discovery import build
 from googleapiclient.http import MediaFileUpload
 from googleapiclient.errors import HttpError
@@ -10,17 +9,15 @@ from google_auth_oauthlib.flow import InstalledAppFlow
 from google.auth.transport.requests import Request
 
 
-load_dotenv()
-
 
 class Uploader:
 
     def __init__(self, creds: list, ROOT_DIR):
         self.ROOT_DIR = ROOT_DIR
         self.token,\
-        self.refresh_token,\
         self.client_id,\
         self.client_secret,\
+        self.refresh_token,\
         self.token_uri = creds
 
     @staticmethod
@@ -73,20 +70,18 @@ class Uploader:
         upload_url = 'https://www.googleapis.com/upload/youtube/v3/videos?uploadType=resumable'
         async with aiohttp.ClientSession() as session:
             youtube = self.authenticate_youtube()
-
             for file_name in os.listdir(os.path.join(self.ROOT_DIR, folder_path)):
-                if num_uploaded >= 3:     # CHECKS IF QUOTA IS EXCEEDED. WE WANT 6 PER DAY IN 2 WAVES!
+                if num_uploaded >= 3:
                     return num_uploaded
                 if not file_name.endswith('.mp4'):
                     continue
-
                 file_path = os.path.join(self.ROOT_DIR, folder_path, file_name)
                 title = file_name.replace("_", " ").strip(".mp4")
                 self.upload_video(youtube, file_path, title, tags)
                 num_uploaded += 1
-
             await session.post(upload_url, data={})
         return num_uploaded
+
 
 
 def get_tokens(client_id, client_secret, token_uri):

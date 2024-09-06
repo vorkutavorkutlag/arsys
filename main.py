@@ -1,35 +1,34 @@
 import asyncio
 import os
 import re
-from dotenv import load_dotenv
+from json import load
 from handlers import footage_handler, reddit_handler, text_to_speech, upload_handler
 
-load_dotenv()
 ROOT_DIR = os.path.dirname(os.path.abspath(__file__))
 
 
 async def main():
+    with open(os.path.join(ROOT_DIR, "youtube_creds.json"), 'r') as file:
+        creds = load(file)
+    account_num: int = 1
+
     while True:
         num_uploaded: int = 0
-        account_num: int = 1
 
-        creds = [
-            os.getenv(f'YOUTUBE_ACCESS_TOKEN_{account_num}'),
-            os.getenv(f'YOUTUBE_REFRESH_TOKEN_{account_num}'),
-            os.getenv(f'YOUTUBE_CLIENT_ID_{account_num}'),  # Will be None if not found
-            os.getenv(f'YOUTUBE_CLIENT_SECRET_{account_num}'),
-            os.getenv(f'YOUTUBE_TOKEN_URI_{account_num}')]
-
-        if None in creds:
+        try:
+            creds_values = list(creds[f'youtube_api_{account_num}'].values())
+        except KeyError:    # == No more accounts
             return
 
-        while num_uploaded < 3:
-            RH: reddit_handler.RedditHandler = reddit_handler.RedditHandler()
-            TTSH: text_to_speech.TextSpeech = text_to_speech.TextSpeech()
-            FH: footage_handler.Footage_Handler = footage_handler.Footage_Handler(ROOT_DIR)
-            UPLOADER: upload_handler.Uploader = upload_handler.Uploader(creds=creds, ROOT_DIR=ROOT_DIR)
-            RH.init_mem()
+        # region INITIALIZE HANDLERS
+        RH: reddit_handler.RedditHandler = reddit_handler.RedditHandler()
+        TTSH: text_to_speech.TextSpeech = text_to_speech.TextSpeech()
+        FH: footage_handler.Footage_Handler = footage_handler.Footage_Handler(ROOT_DIR)
+        UPLOADER: upload_handler.Uploader = upload_handler.Uploader(creds=creds_values, ROOT_DIR=ROOT_DIR)
+        RH.init_mem()
+        # endregion
 
+        while num_uploaded < 3:
             sub, title, body, scary = await RH.get_random_post()
 
             title = title.upper()
@@ -49,7 +48,7 @@ async def main():
             tts_audio.close()
 
             tags = ["shorts", "fyp", "funny", "reddit", "stories", "entertaining", "interesting"]
-            num_uploaded += await UPLOADER.upload_videos_from_folder("output", tags)
+            num_uploaded += await UPLOADER.upload_videos_from_folder("output", tags, num_uploaded)
 
             account_num += 1
 

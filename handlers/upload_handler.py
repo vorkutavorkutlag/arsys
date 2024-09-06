@@ -69,23 +69,28 @@ class Uploader:
         return build('youtube', 'v3', credentials=creds)
 
 
-    async def upload_videos_from_folder(self, folder_path, tags):
+    async def upload_videos_from_folder(self, folder_path: str, tags: list[str], num_uploaded: int):
         upload_url = 'https://www.googleapis.com/upload/youtube/v3/videos?uploadType=resumable'
         async with aiohttp.ClientSession() as session:
             youtube = self.authenticate_youtube()
-            num_uploaded = 0
+
             for file_name in os.listdir(os.path.join(self.ROOT_DIR, folder_path)):
-                if file_name.endswith('.mp4'):
-                    file_path = os.path.join(self.ROOT_DIR, folder_path, file_name)
-                    title = file_name.replace("_", " ").strip(".mp4")
-                    self.upload_video(youtube, file_path, title, tags)
-                    num_uploaded += 1
+                if num_uploaded >= 3:     # CHECKS IF QUOTA IS EXCEEDED. WE WANT 6 PER DAY IN 2 WAVES!
+                    return num_uploaded
+                if not file_name.endswith('.mp4'):
+                    continue
+
+                file_path = os.path.join(self.ROOT_DIR, folder_path, file_name)
+                title = file_name.replace("_", " ").strip(".mp4")
+                self.upload_video(youtube, file_path, title, tags)
+                num_uploaded += 1
+
             await session.post(upload_url, data={})
         return num_uploaded
 
 
-
-def get_tokens(client_id, client_secret, token_uri):          # WILL PROMPT YOU TO LOG INTO YOUR ACCOUNT TO GET TOKENS. SHOULD BE USED ONLY ONCE
+def get_tokens(client_id, client_secret, token_uri):
+    # WILL PROMPT YOU TO LOG INTO YOUR ACCOUNT TO GET TOKENS. SHOULD BE USED ONLY ONCE
     SCOPES = ['https://www.googleapis.com/auth/youtube.upload']
 
     flow = InstalledAppFlow.from_client_config({

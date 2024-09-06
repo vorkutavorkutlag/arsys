@@ -93,4 +93,5 @@ class RedditHandler:
 
 if __name__ == "__main__":
     RH = RedditHandler()
-    RH.show_subreddits()
+
+

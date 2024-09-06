@@ -17,7 +17,6 @@ async def main():
 
         try:
             creds_values = list(creds[f'youtube_api_{account_num}'].values())
-            print(creds_values)
         except KeyError:    # == No more accounts
             return
 

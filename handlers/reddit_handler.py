@@ -64,7 +64,7 @@ class RedditHandler:
         subname = choice(self.subreddits)
         subreddit = await self.reddit.subreddit(subname[0])
         self.arsys_cursor.execute(f"SELECT scary FROM subreddits WHERE name = '{subname[0]}'")
-        scary = bool(list(self.arsys_cursor.fetchall())[0])
+        scary = bool(list(self.arsys_cursor.fetchall())[0][0])   # FETCHALL RETURNS LIST OF TUPLES
 
         found_post = False
         num_posts = 1
@@ -95,5 +95,6 @@ class RedditHandler:
 
 if __name__ == "__main__":
     RH = RedditHandler()
+
 
 

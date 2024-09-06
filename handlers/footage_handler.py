@@ -177,7 +177,7 @@ class Footage_Handler:
                 break
 
 
-    def select_rand_bgm(self, video: VideoFileClip, scary: bool):
+    def select_rand_bgm(self, video: VideoFileClip, scary):
         def loop_audio_clip(audio_clip, duration):
             loops = int(duration // audio_clip.duration) + 1
             audio_clips = [audio_clip] * loops

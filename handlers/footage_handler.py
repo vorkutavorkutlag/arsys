@@ -199,7 +199,7 @@ class Footage_Handler:
         background_music = AudioFileClip(background_music)
         background_music = loop_audio_clip(background_music, duration=video.duration)
         background_music = background_music.set_duration(video.duration)
-        background_music = background_music.volumex(0.35)
+        background_music = background_music.volumex(0.30)
         combined_audio = CompositeAudioClip([video.audio, background_music])
         final_video = video.set_audio(combined_audio)
         background_music.close()

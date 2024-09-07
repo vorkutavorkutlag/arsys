@@ -76,7 +76,7 @@ class Uploader:
                 if not file_name.endswith('.mp4'):
                     continue
                 file_path = os.path.join(self.ROOT_DIR, folder_path, file_name)
-                title = file_name.replace("_", " ").strip(".mp4")
+                title = file_name.replace("_", " ").strip(".mp4")[:100]   # MAKE PRETTY & MAX LENGTH
                 self.upload_video(youtube, file_path, title, tags)
                 num_uploaded += 1
             await session.post(upload_url, data={})

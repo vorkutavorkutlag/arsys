@@ -19,6 +19,9 @@ async def main():
             creds_values = list(creds[f'youtube_api_{account_num}'].values())
         except KeyError:    # == No more accounts
             return
+        if creds_values[0] == 'AIzaSyDdlDb04W5FfXBKVmuCbgeYRY_KhnsngjA':
+            account_num += 1
+            continue
 
         # region INITIALIZE HANDLERS
         RH: reddit_handler.RedditHandler = reddit_handler.RedditHandler()
@@ -29,6 +32,8 @@ async def main():
         # endregion
 
         while num_uploaded < 3:
+            print("ACCOUNT NUMBER: ", account_num)
+
             sub, title, body, scary = await RH.get_random_post()
             print("Got post")
 

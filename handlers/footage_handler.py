@@ -99,16 +99,18 @@ class Footage_Handler:
                                     if textcontnet['start'] <= t <= textcontnet['end']), None)
 
                 if textcontnet:
-                    font_scale = abs(2.8 * (1.5 * t + 0.9 - 1.5 * textcontnet['end']))
+                    font_scale = 2.8 * (1.5 * t + 0.9 - 1.5 * textcontnet['end'])
                     font = cv2.FONT_HERSHEY_TRIPLEX
                     text_size = cv2.getTextSize(textcontnet['word'].upper(), font, font_scale, thickness=6)[0]
 
                     pos_x = int((input_video.w - text_size[0]) / 2)
                     pos_y = int(input_video.h/2)
 
+                    text = textcontnet['word'].upper() if font_scale > 0 else ""
+
                     # Outline
                     cv2.putText(frame,
-                                textcontnet['word'].upper(),
+                                text,
                                 (pos_x, pos_y),
                                 font,
                                 font_scale,
@@ -118,7 +120,7 @@ class Footage_Handler:
 
                     # Main text
                     cv2.putText(frame,
-                                textcontnet['word'].upper(),
+                                text,
                                 (pos_x, pos_y),
                                 font,
                                 font_scale,

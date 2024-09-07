@@ -43,7 +43,7 @@ class Footage_Handler:
         return video_clip, audio_clip
 
 
-    def generate_subtitles_video(self, tts_path: str, input_video: VideoFileClip, cuda=True):
+    def generate_subtitles_video(self, tts_path: str, input_video: VideoFileClip, cuda=True, model_size='large'):
         def split_text_into_lines(data):
 
             MaxChars = 8
@@ -130,8 +130,9 @@ class Footage_Handler:
 
             return frame
 
-        model_size = "large"
-        model = WhisperModel(model_size, device="cuda") if cuda else WhisperModel(model_size)
+        model = WhisperModel(model_size, device="cuda") if cuda else WhisperModel(model_size,
+                                                                                  device='cpu',
+                                                                                  compute_type='int8')
 
         wordlevel_info = []
         segments, info = model.transcribe(os.path.join(self.ROOT_DIR, "output", tts_path), word_timestamps=True)

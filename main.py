@@ -30,32 +30,39 @@ async def main():
 
         while num_uploaded < 3:
             sub, title, body, scary = await RH.get_random_post()
+            print("Got post")
 
             title = title.upper()
             text = ". ".join((title, body))
             stripped_title = re.sub('[!@#$,."?/]', '', title)
 
             await TTSH.tts(text, os.path.join(ROOT_DIR, "output", f"temp_{stripped_title}"))
+            print("Got tts")
 
             tts_footage, tts_audio = FH.select_rand_footage(f"temp_{stripped_title}.wav")
+            print("Got tts video")
 
             bgm_footage = FH.select_rand_bgm(tts_footage, scary)
+            print("Got bgm")
 
             subtitle_footage = FH.generate_subtitles_video(f"temp_{stripped_title}.wav", bgm_footage)
+            print("Got subtitles")
 
             FH.split_footage(subtitle_footage, stripped_title)
+            print("Split footage")
 
             tts_audio.close()
 
             tags = ["shorts", "fyp", "funny", "reddit", "stories", "entertaining", "interesting"]
             num_uploaded += await UPLOADER.upload_videos_from_folder("output", tags, num_uploaded)
-
-            account_num += 1
+            print("Uploaded")
 
             for file in os.listdir(os.path.join(ROOT_DIR, 'output')):
                 if file.endswith((".mp4", ".mp3", ".wav")):
                     os.remove(os.path.join(ROOT_DIR, 'output', file))
+            print("Cleaned trash")
 
+        account_num += 1
 
 if __name__ == '__main__':
     asyncio.run(main())

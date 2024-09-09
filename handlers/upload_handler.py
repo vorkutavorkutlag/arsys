@@ -26,7 +26,7 @@ class Uploader:
             body = {
                 "snippet": {
                     "title": title,
-                    "description": "",
+                    "description": '#' + " #".join(tags),     # PUTS HASHTAGS IN DESCRIPTION
                     "tags": tags,
                     "categoryId": category
                 },

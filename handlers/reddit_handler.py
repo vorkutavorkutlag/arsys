@@ -95,6 +95,24 @@ class RedditHandler:
 
 if __name__ == "__main__":
     RH = RedditHandler()
-
+    while True:
+        answer = input("\n1: Add Subreddit\n"
+                  "2: Remove Subreddit\n"
+                  "3: Show Subreddits\n")
+        match answer:
+            case '1':
+                name = input("\nSubreddit name (no 'r/'):\n")
+                scary = bool(input("\nScary (1 or 0):\n"))
+                check_comments = bool(input("\nCheck comments (1 or 0):\n"))
+                RH.add_subreddit(sub=name, scary=scary, check_comments=check_comments)
+                print("Successfully added.")
+            case '2':
+                name = input("\nSubreddit name (no 'r/'):\n")
+                RH.remove_sub(sub=name)
+                print(f"\n{RH.arsys_cursor.rowcount} row(s) deleted.")
+            case '3':
+                RH.show_subreddits()
+            case _:
+                break
 
 

@@ -1,0 +1,13 @@
+aiohttp==3.9.1
+asyncpraw==7.7.1
+edge_tts==6.1.12
+faster_whisper==1.0.3
+google_api_python_client==2.142.0
+google_auth_oauthlib==1.2.1
+librosa==0.10.2.post1
+moviepy==1.0.3
+mysql_connector_repackaged==0.3.1
+numpy==2.1.1
+opencv_python==4.9.0.80
+protobuf==5.28.0
+python-dotenv==1.0.1

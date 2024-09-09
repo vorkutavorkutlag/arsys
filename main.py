@@ -60,12 +60,12 @@ async def main():
             print("Uploaded")
 
 
-            if not os.path.exists("subreddit-video-dict.json"):
-                with open('subreddit-video-dict.json', 'w+') as file:
+            if not os.path.exists(os.path.join(ROOT_DIR, "subreddit-video-dict.json")):
+                with open(os.path.join(ROOT_DIR, 'subreddit-video-dict.json', 'w+')) as file:
                     empty_data = {}
                     dump(empty_data, file, indent=4)
 
-            with open("subreddit-video-dict.json", 'r+') as file:
+            with open(os.path.join(ROOT_DIR, "subreddit-video-dict.json", 'r+')) as file:
                 data_dict = load(file)
                 try:
                     data_dict[sub].extend(vid_ids)

@@ -11,7 +11,7 @@ ROOT_DIR = os.path.dirname(os.path.abspath(__file__))
 async def main():
     with open(os.path.join(ROOT_DIR, "youtube_creds.json"), 'r') as file:
         creds = load(file)
-    account_num: int = 5
+    account_num: int = 1
 
     while True:
         num_uploaded: int = 0

@@ -1,6 +1,7 @@
 import asyncio
 import os
 import re
+from gc import collect
 from json import load, dump
 from handlers import footage_handler, reddit_handler, text_to_speech, upload_handler
 
@@ -10,7 +11,7 @@ ROOT_DIR = os.path.dirname(os.path.abspath(__file__))
 async def main():
     with open(os.path.join(ROOT_DIR, "youtube_creds.json"), 'r') as file:
         creds = load(file)
-    account_num: int = 1
+    account_num: int = 5
 
     while True:
         num_uploaded: int = 0
@@ -56,16 +57,16 @@ async def main():
             tts_audio.close()
 
             tags = ["shorts", "fyp", "funny", "reddit", "stories", "entertaining", "interesting"]
-            num_uploaded, vid_ids = await UPLOADER.upload_videos_from_folder("output", tags, num_uploaded)
+            vid_ids, num_uploaded = await UPLOADER.upload_videos_from_folder("output", tags, num_uploaded)
             print("Uploaded")
 
 
             if not os.path.exists(os.path.join(ROOT_DIR, "subreddit-video-dict.json")):
-                with open(os.path.join(ROOT_DIR, 'subreddit-video-dict.json', 'w+')) as file:
+                with open(os.path.join(ROOT_DIR, 'subreddit-video-dict.json'), 'w+') as file:
                     empty_data = {}
                     dump(empty_data, file, indent=4)
 
-            with open(os.path.join(ROOT_DIR, "subreddit-video-dict.json", 'r+')) as file:
+            with open(os.path.join(ROOT_DIR, "subreddit-video-dict.json"), 'r+') as file:
                 data_dict = load(file)
                 try:
                     data_dict[sub].extend(vid_ids)
@@ -87,3 +88,4 @@ async def main():
 
 if __name__ == '__main__':
     asyncio.run(main())
+    collect()      # GARBAGE COLLECTIONS

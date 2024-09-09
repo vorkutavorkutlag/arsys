@@ -74,7 +74,7 @@ class Uploader:
 
             for file_name in os.listdir(os.path.join(self.ROOT_DIR, folder_path)):
                 if num_uploaded >= 3:
-                    return num_uploaded
+                    return vid_ids, num_uploaded
                 if not file_name.endswith('.mp4'):
                     continue
 
@@ -83,7 +83,7 @@ class Uploader:
                 vid_ids.append(self.upload_video(youtube, file_path, title, tags))
                 num_uploaded += 1
             await session.post(upload_url, data={})
-        return num_uploaded, vid_ids
+        return vid_ids, num_uploaded
 
 
 

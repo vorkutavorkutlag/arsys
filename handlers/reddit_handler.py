@@ -87,7 +87,7 @@ class RedditHandler:
                     self.arsys_cursor.execute(sql, var)
                     self.arsys_db.commit()
 
-                return subname, post.title, post.selftext, scary
+                return subname[0], post.title, post.selftext, scary
 
 
             num_posts += 1

@@ -43,7 +43,7 @@ class Uploader:
                 if status:
                     print(f"Uploaded {int(status.progress() * 100)}%")
 
-            print(f"Upload complete: {response['id']}")
+            return response['id']
 
         except HttpError as e:
             print(f"An error occurred: {e}")
@@ -68,19 +68,22 @@ class Uploader:
 
     async def upload_videos_from_folder(self, folder_path: str, tags: list[str], num_uploaded: int):
         upload_url = 'https://www.googleapis.com/upload/youtube/v3/videos?uploadType=resumable'
+        vid_ids = []
         async with aiohttp.ClientSession() as session:
             youtube = self.authenticate_youtube()
+
             for file_name in os.listdir(os.path.join(self.ROOT_DIR, folder_path)):
                 if num_uploaded >= 3:
                     return num_uploaded
                 if not file_name.endswith('.mp4'):
                     continue
+
                 file_path = os.path.join(self.ROOT_DIR, folder_path, file_name)
                 title = file_name.replace("_", " ").strip(".mp4")[:100]   # MAKE PRETTY & MAX LENGTH
-                self.upload_video(youtube, file_path, title, tags)
+                vid_ids.append(self.upload_video(youtube, file_path, title, tags))
                 num_uploaded += 1
             await session.post(upload_url, data={})
-        return num_uploaded
+        return num_uploaded, vid_ids
 
 
 

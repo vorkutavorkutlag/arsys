@@ -1,7 +1,7 @@
 import asyncio
 import os
 import re
-from json import load
+from json import load, dump
 from handlers import footage_handler, reddit_handler, text_to_speech, upload_handler
 
 ROOT_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -56,8 +56,27 @@ async def main():
             tts_audio.close()
 
             tags = ["shorts", "fyp", "funny", "reddit", "stories", "entertaining", "interesting"]
-            num_uploaded += await UPLOADER.upload_videos_from_folder("output", tags, num_uploaded)
+            num_uploaded, vid_ids = await UPLOADER.upload_videos_from_folder("output", tags, num_uploaded)
             print("Uploaded")
+
+
+            if not os.path.exists("subreddit-video-dict.json"):
+                with open('subreddit-video-dict.json', 'w+') as file:
+                    empty_data = {}
+                    dump(empty_data, file, indent=4)
+
+            with open("subreddit-video-dict.json", 'r+') as file:
+                data_dict = load(file)
+                try:
+                    data_dict[sub].extend(vid_ids)
+                except KeyError:
+                    data_dict[sub] = vid_ids
+
+                file.seek(0)
+                dump(data_dict, file, indent=4)
+                file.truncate()
+
+            print("Added to archive")
 
             for file in os.listdir(os.path.join(ROOT_DIR, 'output')):
                 if file.endswith((".mp4", ".mp3", ".wav")):

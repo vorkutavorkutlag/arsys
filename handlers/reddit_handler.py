@@ -4,8 +4,10 @@ import hashlib
 from os import getenv
 from dotenv import load_dotenv
 from random import choice
-
+from json import load
 from pprint import pprint
+from requests import get
+from bs4 import BeautifulSoup
 
 
 class RedditHandler:
@@ -27,6 +29,7 @@ class RedditHandler:
         self.arsys_cursor = self.arsys_db.cursor()
         self.arsys_cursor.execute("SELECT name FROM subreddits")
         self.subreddits: list = self.arsys_cursor.fetchall()
+        self.weights_dict = {}
 
     def init_mem(self):
         self.arsys_cursor.execute("CREATE TABLE IF NOT EXISTS old_posts (hash CHAR(255), sub VARCHAR(255))")
@@ -59,6 +62,31 @@ class RedditHandler:
         self.arsys_cursor.execute(sql)
         self.arsys_db.commit()
 
+
+    def recalibrate_weights(self):
+        with open('..\\subreddit-video-dict.json', 'r') as file:
+            data_dict: dict = load(file)
+        interaction_dict: dict = {}
+        pprint(data_dict)
+        for pair in data_dict:
+            sub = pair[0]
+            vid_list = pair[1]
+            sum_interaction: int = 0
+
+            for vid_id in vid_list:
+                video_url = f"https://www.youtube.com/watch?v={vid_id}"
+                response = get(video_url)
+
+                soup = BeautifulSoup(response.content, 'html.parser')
+                views: int = int(soup.find("div", class_="watch-view-count").text) + 1
+                likes: int = int(soup.find("button", class_="like-button-renderer-like-button").text) + 1
+
+                sum_interaction += views * likes
+            interaction_dict[sub] = sum_interaction
+        for sub, score in interaction_dict:
+            # SOFTMAX ACTIVATION FUNCTION
+            # Because all the values are positive, there is no need in exponentiation
+            self.weights_dict[sub] = interaction_dict[sub] / sum(interaction_dict.values())
 
     async def get_random_post(self, forget: bool = False) -> tuple:
         subname = choice(self.subreddits)
@@ -98,7 +126,8 @@ if __name__ == "__main__":
     while True:
         answer = input("\n1: Add Subreddit\n"
                   "2: Remove Subreddit\n"
-                  "3: Show Subreddits\n")
+                  "3: Show Subreddits\n"
+                  "4: (EXPERIMENTAL) Recalibrate Choice Weights (WARNING: You must have enough views and variety for this)\n")
         match answer:
             case '1':
                 name = input("\nSubreddit name (no 'r/'):\n")
@@ -112,6 +141,12 @@ if __name__ == "__main__":
                 print(f"\n{RH.arsys_cursor.rowcount} row(s) deleted.")
             case '3':
                 RH.show_subreddits()
+            case '4':
+                try:
+                    RH.recalibrate_weights()
+                except (FileNotFoundError, KeyError):
+                    print("Make sure you run the program at least once! It is incredibly recommended that you"
+                          " recalibrate the weights only once you have sufficient data (views, likes)")
             case _:
                 break
 

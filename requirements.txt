@@ -7,10 +7,12 @@ google_auth_oauthlib==1.2.1
 librosa~=0.10.0
 moviepy==1.0.3
 mysql_connector_repackaged==0.3.1
-numpy~=1.22.0
-opencv_python==4.9.0.80
+numpy~=2.0.2
+opencv_python==4.10.0.82
 protobuf==5.28.0
 python-dotenv==1.0.1
 mysql~=0.0.3
 mysql-connector-python~=9.0.0
-opencv-python~=4.10.0.84
+opencv-python~=4.10.0.82
+requests~=2.32.3
+beautifulsoup4~=4.12.3

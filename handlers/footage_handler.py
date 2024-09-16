@@ -43,7 +43,7 @@ class Footage_Handler:
         return video_clip, audio_clip
 
 
-    def generate_subtitles_video(self, tts_path: str, input_video: VideoFileClip, cuda=True, model_size='large'):
+    def generate_subtitles_video(self, tts_path: str, input_video: VideoFileClip, cuda=True, model_size='medium'):
         def split_text_into_lines(data):
 
             MaxChars = 8

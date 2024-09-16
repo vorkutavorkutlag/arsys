@@ -7,7 +7,7 @@ from googleapiclient.errors import HttpError
 from google.oauth2.credentials import Credentials
 from google_auth_oauthlib.flow import InstalledAppFlow
 from google.auth.transport.requests import Request
-
+from json import load
 
 
 class Uploader:
@@ -109,8 +109,20 @@ def get_tokens(client_id, client_secret, token_uri):
 
 
 if __name__ == "__main__":
-    clientid = input("client id\n")
-    clientsecret = input("client secret\n")
-    tokenuri = input("token uri\n")
+    account_num: int = 0
+    ROOT_DIR = os.path.dirname(os.path.abspath(__file__))
+    with open(os.path.join(ROOT_DIR, "..", "youtube_creds.json"), 'r') as file:
+        creds = load(file)
 
-    get_tokens(clientid, clientsecret, tokenuri)
+    while True:
+        account_num += 1
+        try:
+            creds_values = list(creds[f'youtube_api_{account_num}'].values())
+        except KeyError:
+            break
+
+        client_id = creds_values[1]
+        client_secret = creds_values[2]
+        token_uri = creds_values[4]
+
+        get_tokens(client_id, client_secret, token_uri)

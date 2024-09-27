@@ -11,7 +11,7 @@ numpy~=2.0.2
 opencv_python==4.10.0.82
 protobuf==5.28.0
 python-dotenv==1.0.1
-mysql~=0.0.3
+# mysql~=0.0.3
 mysql-connector-python~=9.0.0
 opencv-python~=4.10.0.82
 requests~=2.32.3

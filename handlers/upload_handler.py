@@ -52,7 +52,6 @@ class Uploader:
             print(f"An error occurred: {e}")
             return None
 
-
     def authenticate_youtube(self):
         creds = Credentials(
             token=self.token,

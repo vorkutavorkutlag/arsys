@@ -1,15 +1,18 @@
+import os
 import asyncpraw
-import mysql.connector
 import hashlib
 from os import getenv
 from dotenv import load_dotenv
 from random import choice
-
+from json import load
 from pprint import pprint
+from requests import get
+from bs4 import BeautifulSoup
+from datetime import date
 
 
 class RedditHandler:
-    def __init__(self):
+    def __init__(self, rd: str):
         load_dotenv()
         self.reddit = asyncpraw.Reddit(
             client_id=getenv("REDDIT_CLIENT_ID"),
@@ -17,54 +20,47 @@ class RedditHandler:
             user_agent=getenv("REDDIT_USER_AGENT"),
             database="arsys"
         )
-        self.arsys_db = mysql.connector.connect(
-            host="localhost",
-            user=getenv("MYSQL_USER"),
-            password=getenv("MYSQL_PASS"),
-            database="arsys"
-        )
+        self.subreddits: dict = {"nosleep": (1, 0),
+                                 "scarystories": (1, 0),
+                                 "tifu": (0, 0),
+                                 "AmITheAsshole": (0, 0),
+                                 "entitledparents": (0, 0),
+                                 "confession": (1, 0),
+                                 "confessions": (1, 0),
+                                 }
+        self.weights_dict = {}
+        self.ROOT_DIR = rd
 
-        self.arsys_cursor = self.arsys_db.cursor()
-        self.arsys_cursor.execute("SELECT name FROM subreddits")
-        self.subreddits: list = self.arsys_cursor.fetchall()
+    def recalibrate_weights(self):
+        with open('..\\subreddit-video-dict.json', 'r') as file:
+            data_dict: dict = load(file)
+        interaction_dict: dict = {}
+        pprint(data_dict)
+        for pair in data_dict:
+            sub = pair[0]
+            vid_list = pair[1]
+            sum_interaction: int = 0
 
-    def init_mem(self):
-        self.arsys_cursor.execute("CREATE TABLE IF NOT EXISTS old_posts (hash CHAR(255), sub VARCHAR(255))")
-        self.arsys_db.commit()
+            for vid_id in vid_list:
+                video_url = f"https://www.youtube.com/watch?v={vid_id}"
+                response = get(video_url)
 
-    def wipe_mem(self):
-        self.arsys_cursor.execute("DROP TABLE IF EXISTS old_posts")
-        self.arsys_cursor.execute("CREATE TABLE old_posts (hash CHAR(255), sub VARCHAR(255))")
-        self.arsys_db.commit()
+                soup = BeautifulSoup(response.content, 'html.parser')
+                views: int = int(soup.find("div", class_="watch-view-count").text) + 1
+                likes: int = int(soup.find("button", class_="like-button-renderer-like-button").text) + 1
 
+                sum_interaction += views * likes
+            interaction_dict[sub] = sum_interaction
+        for sub, score in interaction_dict:
+            # SOFTMAX ACTIVATION FUNCTION
+            # Because all the values are positive, there is no need in exponentiation
+            self.weights_dict[sub] = interaction_dict[sub] / sum(interaction_dict.values())
 
-    def show_mem(self):
-        self.arsys_cursor.execute(f"SELECT * FROM old_posts")
-        for pair in self.arsys_cursor.fetchall():
-            pprint(pair)
-
-    def show_subreddits(self):
-        self.arsys_cursor.execute(f"SELECT * FROM subreddits")
-        for pair in self.arsys_cursor.fetchall():
-            pprint(pair)
-
-    def add_subreddit(self, sub: str, scary: bool = False, check_comments: bool = False):
-        sql = "INSERT INTO subreddits (name, scary, check_comments) VALUES (%s, %s, %s)"
-        self.arsys_cursor.execute(sql, (sub, scary, check_comments))
-        self.arsys_db.commit()
-
-
-    def remove_sub(self, sub: str):
-        sql = f"DELETE FROM subreddits WHERE name = '{sub}'"
-        self.arsys_cursor.execute(sql)
-        self.arsys_db.commit()
-
-
-    async def get_random_post(self) -> tuple:
-        subname = choice(self.subreddits)
-        subreddit = await self.reddit.subreddit(subname[0])
-        self.arsys_cursor.execute(f"SELECT scary FROM subreddits WHERE name = '{subname[0]}'")
-        scary = bool(list(self.arsys_cursor.fetchall())[0])
+    async def get_random_post(self, forget: bool = False) -> tuple:
+        subname = choice(list(self.subreddits.keys()))[0]
+        subreddit = await self.reddit.subreddit(subname)
+        scary = self.subreddits[subname][0]
+        today = date.today()
 
         found_post = False
         num_posts = 1
@@ -76,21 +72,28 @@ class RedditHandler:
                     continue
 
                 post_hash = hashlib.sha1(post.selftext.encode()).hexdigest()
-                self.arsys_cursor.execute(f"SELECT hash FROM old_posts WHERE sub = '{subname[0]}'")
-                used_hashes = self.arsys_cursor.fetchall()
-                if (post_hash,) in used_hashes:
-                    continue
+                with open(os.path.join(self.ROOT_DIR, "config", "posts_cache.json")) as file:
+                    post_cache = load(file)
 
-                sql = "INSERT INTO old_posts (hash, sub) VALUES (%s, %s)"
-                var = (post_hash, subname[0])
-                self.arsys_cursor.execute(sql, var)
-                self.arsys_db.commit()
+                try:                                   # CHECK IF POST WAS POSTED RECENTLY
+                    if post_hash in post_cache[today]:
+                        continue
+                except (KeyError, TypeError):
+                    pass
+                if not forget:
+                    try:                               # APPEND POST TO MEMORY
+                        post_cache[today].append(post_hash)
+                    except TypeError:
+                        post_cache[today] = [post_hash]
+
+                for day in list(post_cache.keys()):   # ELIMINATE OLD POSTS
+                    if (today - day).days >= 3:
+                        del post_cache[day]
+
                 return subname, post.title, post.selftext, scary
-
 
             num_posts += 1
 
 
 if __name__ == "__main__":
-    RH = RedditHandler()
-    RH.show_subreddits()
+    pass

@@ -4,7 +4,7 @@ import hashlib
 from os import getenv
 from dotenv import load_dotenv
 from random import choice
-from json import load
+from json import load, dump
 from pprint import pprint
 from requests import get
 from bs4 import BeautifulSoup
@@ -32,7 +32,7 @@ class RedditHandler:
         self.ROOT_DIR = rd
 
     def recalibrate_weights(self):
-        with open('..\\subreddit-video-dict.json', 'r') as file:
+        with open('../config/subreddit-video-dict.json', 'r') as file:
             data_dict: dict = load(file)
         interaction_dict: dict = {}
         pprint(data_dict)
@@ -57,7 +57,7 @@ class RedditHandler:
             self.weights_dict[sub] = interaction_dict[sub] / sum(interaction_dict.values())
 
     async def get_random_post(self, forget: bool = False) -> tuple:
-        subname = choice(list(self.subreddits.keys()))[0]
+        subname = choice(list(self.subreddits.keys()))
         subreddit = await self.reddit.subreddit(subname)
         scary = self.subreddits[subname][0]
         today = date.today()
@@ -72,25 +72,29 @@ class RedditHandler:
                     continue
 
                 post_hash = hashlib.sha1(post.selftext.encode()).hexdigest()
-                with open(os.path.join(self.ROOT_DIR, "config", "posts_cache.json")) as file:
+                with open(os.path.join(self.ROOT_DIR, "config", "posts_cache.json"), 'r+') as file:
                     post_cache = load(file)
 
-                try:                                   # CHECK IF POST WAS POSTED RECENTLY
-                    if post_hash in post_cache[today]:
-                        continue
-                except (KeyError, TypeError):
-                    pass
-                if not forget:
-                    try:                               # APPEND POST TO MEMORY
-                        post_cache[today].append(post_hash)
-                    except TypeError:
-                        post_cache[today] = [post_hash]
+                    try:                                   # CHECK IF POST WAS POSTED RECENTLY
+                        if post_hash in post_cache[today]:
+                            continue
+                    except (KeyError, TypeError):
+                        pass
 
-                for day in list(post_cache.keys()):   # ELIMINATE OLD POSTS
-                    if (today - day).days >= 3:
-                        del post_cache[day]
+                    for day in list(post_cache.keys()):   # ELIMINATE OLD POSTS
+                        if (today - day).days >= 3:
+                            del post_cache[day]
 
-                return subname, post.title, post.selftext, scary
+                    if not forget:
+                        try:                               # APPEND POST TO MEMORY
+                            post_cache[today].append(post_hash)
+                        except TypeError:
+                            post_cache[today] = [post_hash]
+
+                        file.seek(0)
+                        dump(post_cache, file, indent=6)
+
+                    return subname, post.title, post.selftext, scary
 
             num_posts += 1
 

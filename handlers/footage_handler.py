@@ -8,14 +8,17 @@ from moviepy.editor import VideoFileClip, AudioFileClip, CompositeAudioClip, \
 from moviepy.config import change_settings
 from faster_whisper import WhisperModel
 
-
 os.environ["KMP_DUPLICATE_LIB_OK"] = "TRUE"
 change_settings({"IMAGEMAGICK_BINARY": r"C:\\Program Files\\ImageMagick-7.1.1-Q16-HDRI\\magick.exe"})
 
 
 class Footage_Handler:
-    @staticmethod
-    def select_rand_footage(tts_path: str):
+
+    def __init__(self, ROOT_DIR):
+        self.ROOT_DIR = ROOT_DIR
+
+
+    def select_rand_footage(self, tts_path: str):
         def loop_video_to_duration(clip: VideoFileClip, target_duration: int):
             clip_duration = clip.duration
             n_loops = int(target_duration // clip_duration) + 1
@@ -24,12 +27,12 @@ class Footage_Handler:
             return looped_clip.subclip(0, target_duration)
 
         not_videos = ['__pycache__', 'desktop.ini']
-        background_footage = f"footage\\" \
-                             f"{random.choice([file for file in os.listdir('footage') if file not in not_videos])}"
+        background_footage = os.path.join(self.ROOT_DIR, 'footage', random.choice([file for file in
+                        os.listdir(os.path.join(self.ROOT_DIR, 'footage'))if file not in not_videos]))
         background_footage = VideoFileClip(background_footage)
 
-        speech_duration = get_duration(filename=os.path.join("output", tts_path))
-        audio_clip = AudioFileClip(filename=os.path.join("output", tts_path))
+        speech_duration = get_duration(filename=os.path.join(self.ROOT_DIR, "output", tts_path))
+        audio_clip = AudioFileClip(filename=os.path.join(self.ROOT_DIR, "output", tts_path))
 
         if audio_clip.duration < background_footage.duration:
             new_start = random.randrange(0, round(background_footage.duration - speech_duration))
@@ -39,8 +42,8 @@ class Footage_Handler:
         video_clip.audio = audio_clip
         return video_clip, audio_clip
 
-    @staticmethod
-    def generate_subtitles_video(tts_path: str, input_video: VideoFileClip, cuda=True):
+
+    def generate_subtitles_video(self, tts_path: str, input_video: VideoFileClip, cuda=True, model_size='medium'):
         def split_text_into_lines(data):
 
             MaxChars = 8
@@ -96,16 +99,18 @@ class Footage_Handler:
                                     if textcontnet['start'] <= t <= textcontnet['end']), None)
 
                 if textcontnet:
-                    font_scale = abs(2.8 * (1.5 * t + 0.9 - 1.5 * textcontnet['end']))
+                    font_scale = 2.8 * (1.5 * t + 0.9 - 1.5 * textcontnet['end'])
                     font = cv2.FONT_HERSHEY_TRIPLEX
                     text_size = cv2.getTextSize(textcontnet['word'].upper(), font, font_scale, thickness=6)[0]
 
                     pos_x = int((input_video.w - text_size[0]) / 2)
                     pos_y = int(input_video.h/2)
 
+                    text = textcontnet['word'].upper() if font_scale > 0 else ""
+
                     # Outline
                     cv2.putText(frame,
-                                textcontnet['word'].upper(),
+                                text,
                                 (pos_x, pos_y),
                                 font,
                                 font_scale,
@@ -115,7 +120,7 @@ class Footage_Handler:
 
                     # Main text
                     cv2.putText(frame,
-                                textcontnet['word'].upper(),
+                                text,
                                 (pos_x, pos_y),
                                 font,
                                 font_scale,
@@ -127,11 +132,12 @@ class Footage_Handler:
 
             return frame
 
-        model_size = "large"
-        model = WhisperModel(model_size, device="cuda") if cuda else WhisperModel(model_size)
+        model = WhisperModel(model_size, device="cuda") if cuda else WhisperModel(model_size,
+                                                                                  device='cpu',
+                                                                                  compute_type='int8')
 
         wordlevel_info = []
-        segments, info = model.transcribe(os.path.join("output", tts_path), word_timestamps=True)
+        segments, info = model.transcribe(os.path.join(self.ROOT_DIR, "output", tts_path), word_timestamps=True)
         segments = list(segments)  # The transcription will actually run here.
         for segment in segments:
             for word in segment.words:
@@ -145,15 +151,16 @@ class Footage_Handler:
         out_video = input_video.fl(lambda gf, t: pipeline(gf(t), t))
         return out_video
 
-    @staticmethod
-    def split_footage(full_video: VideoFileClip, title):
+
+    def split_footage(self, full_video: VideoFileClip, title):
         partDura = 59  # duration of a part in seconds
         fullDura = full_video.duration
         startPos = 0
 
         if full_video.duration < partDura:
-            full_video.write_videofile(os.path.join("output", f"{title}.mp4"), codec="libx264",
-                                       temp_audiofile='temp-audio.m4a', remove_temp=True, audio_codec='aac')
+            full_video.write_videofile(os.path.join(self.ROOT_DIR, "output", f"{title}.mp4"), codec="libx264",
+                temp_audiofile=os.path.join(self.ROOT_DIR, "output", 'temp-audio.m4a'),
+                                       remove_temp=True, audio_codec='aac')
             return
 
         i = 1
@@ -164,16 +171,16 @@ class Footage_Handler:
                 endPos = fullDura
 
             clip = full_video.subclip(startPos, endPos)
-            part_name = os.path.join("output", f"{title} Part {i}.mp4")
-            clip.to_videofile(part_name, codec="libx264", temp_audiofile='temp-audio.m4a', remove_temp=True,
-                              audio_codec='aac')
+            part_name = os.path.join(self.ROOT_DIR, "output", f"{title} Part {i}.mp4")
+            clip.to_videofile(part_name, codec="libx264", temp_audiofile=os.path.join(self.ROOT_DIR, "output",
+                            'temp-audio.m4a'), remove_temp=True, audio_codec='aac')
             i += 1
             startPos = endPos  # jump to next clip
-            if startPos >= fullDura:
+            if startPos >= fullDura or i == 4:
                 break
 
-    @staticmethod
-    def select_rand_bgm(video: VideoFileClip, scary: bool):
+
+    def select_rand_bgm(self, video: VideoFileClip, scary):
         def loop_audio_clip(audio_clip, duration):
             loops = int(duration // audio_clip.duration) + 1
             audio_clips = [audio_clip] * loops
@@ -181,16 +188,18 @@ class Footage_Handler:
 
         not_bgms = ('__pycache__', 'desktop.ini')
         if scary:
-            background_music = os.path.join("scary_bgm",
-                        f"{random.choice([file for file in os.listdir('scary_bgm') if file not in not_bgms])}")
+            background_music = os.path.join(self.ROOT_DIR, "scary_bgm",
+                random.choice([file for file in os.listdir(os.path.join(self.ROOT_DIR, 'scary_bgm'))
+                               if file not in not_bgms]))
         else:
-            background_music = os.path.join("background_music",
-                        f"{random.choice([file for file in os.listdir('background_music') if file not in not_bgms])}")
+            background_music = os.path.join(self.ROOT_DIR, "background_music",
+                random.choice([file for file in os.listdir(os.path.join(self.ROOT_DIR, 'background_music'))
+                               if file not in not_bgms]))
 
         background_music = AudioFileClip(background_music)
         background_music = loop_audio_clip(background_music, duration=video.duration)
         background_music = background_music.set_duration(video.duration)
-        background_music = background_music.volumex(0.35)
+        background_music = background_music.volumex(0.30)
         combined_audio = CompositeAudioClip([video.audio, background_music])
         final_video = video.set_audio(combined_audio)
         background_music.close()
